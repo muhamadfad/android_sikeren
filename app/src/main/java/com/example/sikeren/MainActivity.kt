@@ -39,9 +39,9 @@ class MainActivity : ComponentActivity() {
 fun SikerenApp() {
     val coroutineScope = rememberCoroutineScope()
 
-    var isLoggedIn by remember { mutableStateOf(true) }
+    var isLoggedIn by remember { mutableStateOf(false) }
     var user by remember { mutableStateOf(UserProfile()) }
-    var token by remember { mutableStateOf("token-demo-7400") }
+    var token by remember { mutableStateOf("") }
 
     var currentTab by remember { mutableStateOf(0) } // 0: Home, 1: Kegiatan, 2: QR Absensi, 3: Profil
     var selectedKegiatan by remember { mutableStateOf<KegiatanItem?>(null) }
