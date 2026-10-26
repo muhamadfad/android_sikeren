@@ -25,6 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sikeren.theme.*
 
+/**
+ * World-Class Institutional Login Screen for SIKEREN Mobile
+ * Optimized for credibility, security perception, and frictionless authentication.
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -40,15 +44,15 @@ fun LoginScreen(
             .fillMaxSize()
             .background(SurfaceBg)
     ) {
-        // Top orange gradient circle accent
+        // Ambient Navy/Blue glow accent
         Box(
             modifier = Modifier
-                .size(280.dp)
-                .offset(x = 180.dp, y = (-80).dp)
+                .size(320.dp)
+                .offset(x = 160.dp, y = (-90).dp)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(OrangeSecondary.copy(alpha = 0.35f), Color.Transparent)
+                        colors = listOf(BpsBlue.copy(alpha = 0.22f), Color.Transparent)
                     )
                 )
         )
@@ -67,7 +71,7 @@ fun LoginScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .background(
                         Brush.linearGradient(
-                            listOf(OrangeGradientStart, OrangeGradientEnd)
+                            listOf(BpsNavy, BpsBlue)
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -83,25 +87,26 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = "Sikeren Mobile",
-                fontSize = 28.sp,
+                text = "SIKEREN Mobile",
+                fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextPrimary
             )
 
             Text(
-                text = "Sistem Informasi Kegiatan & Presensi BPS",
-                fontSize = 14.sp,
+                text = "Badan Pusat Statistik Provinsi Sulawesi Tenggara",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
                 color = TextSecondary,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Card Form
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = CardBg),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
@@ -125,12 +130,12 @@ fun LoginScreen(
                         onValueChange = { username = it },
                         label = { Text("Email / Username / NIP Lama") },
                         leadingIcon = {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = OrangePrimary)
+                            Icon(Icons.Default.Person, contentDescription = null, tint = BpsNavy)
                         },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = OrangePrimary,
+                            focusedBorderColor = BpsNavy,
                             unfocusedBorderColor = BorderLight
                         ),
                         modifier = Modifier.fillMaxWidth()
@@ -144,7 +149,7 @@ fun LoginScreen(
                         onValueChange = { password = it },
                         label = { Text("Kata Sandi") },
                         leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = OrangePrimary)
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = BpsNavy)
                         },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -160,7 +165,7 @@ fun LoginScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = OrangePrimary,
+                            focusedBorderColor = BpsNavy,
                             unfocusedBorderColor = BorderLight
                         ),
                         modifier = Modifier.fillMaxWidth()
@@ -168,7 +173,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Login Button with Orange Gradient
+                    // Login Button with BPS Navy
                     Button(
                         onClick = {
                             isLoading = true
@@ -178,7 +183,7 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = BpsNavy)
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -208,9 +213,9 @@ fun LoginScreen(
                     onDirectLogin(username, password)
                 },
                 shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = OrangePrimary)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = BpsNavy)
             ) {
-                Text("⚡ Masuk Instan (Yunus Samuel)")
+                Text("⚡ Masuk Cepat (Akun Demo: Yunus Samuel)")
             }
         }
     }

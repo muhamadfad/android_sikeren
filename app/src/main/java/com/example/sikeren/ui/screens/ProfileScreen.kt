@@ -20,6 +20,10 @@ import androidx.compose.ui.unit.sp
 import com.example.sikeren.model.UserProfile
 import com.example.sikeren.theme.*
 
+/**
+ * World-Class Employee Profile Screen
+ * Provides authoritative identity verification, institutional roles, and unambiguous session management.
+ */
 @Composable
 fun ProfileScreen(
     user: UserProfile,
@@ -74,17 +78,17 @@ fun ProfileScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Avatar Large
+                // Avatar Large with BPS Navy gradient
                 Box(
                     modifier = Modifier
-                        .size(90.dp)
+                        .size(92.dp)
                         .clip(CircleShape)
                         .background(
-                            Brush.linearGradient(listOf(OrangePrimary, OrangeSecondary))
+                            Brush.linearGradient(listOf(BpsNavy, BpsBlue))
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -96,26 +100,30 @@ fun ProfileScreen(
                     )
                 }
 
-                Text(
-                    text = user.namaLengkap,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = user.namaLengkap,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary
+                    )
 
-                Text(
-                    text = user.jabatan,
-                    fontSize = 14.sp,
-                    color = OrangePrimary,
-                    fontWeight = FontWeight.SemiBold
-                )
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = user.jabatan,
+                        fontSize = 14.sp,
+                        color = BpsNavy,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
 
                 // Role Badge
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (user.isAdminPst) BpsAmberSoft else (if (user.isPimpinan) AccentPurpleSoft else BpsBlueLight))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = if (user.isAdminPst) "Role: Admin PST (Pengelola Jadwal Jaga)" else (if (user.isPimpinan) "Role: Pimpinan (Bebas Tugas PST)" else "Role: Pegawai (Penjaga PST)"),
@@ -128,17 +136,22 @@ fun ProfileScreen(
                 // Info Details Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg)
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardBg),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         ProfileInfoRow(label = "NIP Baru", value = user.nipbaru)
+                        HorizontalDivider(color = BorderSubtle, thickness = 1.dp)
                         ProfileInfoRow(label = "NIP Lama", value = user.niplama)
+                        HorizontalDivider(color = BorderSubtle, thickness = 1.dp)
                         ProfileInfoRow(label = "Organisasi / Divisi", value = user.organisasi)
+                        HorizontalDivider(color = BorderSubtle, thickness = 1.dp)
                         ProfileInfoRow(label = "Satuan Kerja", value = "BPS Sultra (${user.idSatker})")
+                        HorizontalDivider(color = BorderSubtle, thickness = 1.dp)
                         ProfileInfoRow(label = "Email Resmi", value = user.email)
                     }
                 }
@@ -150,7 +163,7 @@ fun ProfileScreen(
                     onClick = onLogout,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = DangerRed)
                 ) {

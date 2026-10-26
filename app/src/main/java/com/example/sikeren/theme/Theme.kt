@@ -12,11 +12,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = OrangePrimary,
+    primary = BpsNavy,
     onPrimary = Color.White,
-    primaryContainer = OrangeDeep,
+    primaryContainer = BpsBlueDark,
     onPrimaryContainer = Color.White,
-    secondary = OrangeSecondary,
+    secondary = BpsBlue,
     background = Color(0xFF0F172A),
     surface = Color(0xFF1E293B),
     onBackground = Color.White,
@@ -24,11 +24,11 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = OrangePrimary,
+    primary = BpsNavy,
     onPrimary = Color.White,
-    primaryContainer = OrangeSoft,
-    onPrimaryContainer = OrangeDeep,
-    secondary = OrangeSecondary,
+    primaryContainer = BpsBlueLight,
+    onPrimaryContainer = BpsNavy,
+    secondary = BpsBlue,
     background = SurfaceBg,
     surface = CardBg,
     onBackground = TextPrimary,
@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun SikerenTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Keep our brand orange aesthetic
+    dynamicColor: Boolean = false, // Keep consistent BPS institutional aesthetic
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
