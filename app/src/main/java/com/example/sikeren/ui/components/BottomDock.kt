@@ -1,11 +1,7 @@
 package com.example.sikeren.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,7 +16,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,15 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.sikeren.theme.*
 
 /**
- * World-Class Floating Pill Navigation Dock
- * Features dynamic pill expansion with spring physics,
- * tactile ripple response, and frosted glass elevation.
+ * Pure Minimalist Floating Bottom Dock
+ * Zero layout-shifting, NO jarring text expansion, fixed harmonious geometry.
+ * Transitions are buttery smooth (soft crossfade + color tween) across all devices.
  */
 @Composable
 fun BottomFloatingDock(
@@ -53,46 +46,46 @@ fun BottomFloatingDock(
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(36.dp),
+            shape = RoundedCornerShape(32.dp),
             color = CardBg,
-            shadowElevation = 12.dp,
+            shadowElevation = 8.dp,
             modifier = Modifier
-                .height(64.dp)
-                .border(1.dp, BorderLight, RoundedCornerShape(36.dp))
+                .height(58.dp)
+                .border(1.dp, BorderLight, RoundedCornerShape(32.dp))
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Tab 0: Home
-                PillDockItem(
+                IconDockItem(
                     icon = if (currentTab == 0) Icons.Default.Home else Icons.Outlined.Home,
-                    label = "Beranda",
+                    contentDescription = "Beranda",
                     isSelected = currentTab == 0,
                     onClick = { onTabSelected(0) }
                 )
 
                 // Tab 1: Kegiatan
-                PillDockItem(
+                IconDockItem(
                     icon = if (currentTab == 1) Icons.AutoMirrored.Filled.EventNote else Icons.AutoMirrored.Outlined.EventNote,
-                    label = "Kegiatan",
+                    contentDescription = "Kegiatan",
                     isSelected = currentTab == 1,
                     onClick = { onTabSelected(1) }
                 )
 
                 // Tab 2: QR Scanner
-                PillDockItem(
+                IconDockItem(
                     icon = if (currentTab == 2) Icons.Default.QrCodeScanner else Icons.Outlined.QrCodeScanner,
-                    label = "Scan QR",
+                    contentDescription = "Scan QR",
                     isSelected = currentTab == 2,
                     onClick = { onTabSelected(2) }
                 )
 
                 // Tab 3: Profil
-                PillDockItem(
+                IconDockItem(
                     icon = if (currentTab == 3) Icons.Default.Person else Icons.Outlined.Person,
-                    label = "Profil",
+                    contentDescription = "Profil",
                     isSelected = currentTab == 3,
                     onClick = { onTabSelected(3) }
                 )
@@ -102,62 +95,42 @@ fun BottomFloatingDock(
 }
 
 @Composable
-private fun PillDockItem(
+private fun IconDockItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
+    contentDescription: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+
+    // Soft, smooth color transition (zero jerky motion, zero layout jump)
     val animatedBg by animateColorAsState(
         targetValue = if (isSelected) BpsNavy else Color.Transparent,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "pillDockBg"
+        animationSpec = tween(durationMillis = 220),
+        label = "dockBg"
     )
-    val animatedContentColor by animateColorAsState(
+    val animatedTint by animateColorAsState(
         targetValue = if (isSelected) Color.White else TextSecondary,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "pillDockColor"
+        animationSpec = tween(durationMillis = 220),
+        label = "dockTint"
     )
 
     Box(
         modifier = Modifier
-            .height(48.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .size(44.dp)
+            .clip(CircleShape)
             .background(animatedBg)
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(bounded = true, radius = 24.dp)
-            ) { onClick() }
-            .padding(horizontal = if (isSelected) 16.dp else 12.dp),
+                indication = ripple(bounded = true, radius = 22.dp)
+            ) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = animatedContentColor,
-                modifier = Modifier.size(22.dp)
-            )
-
-            AnimatedVisibility(
-                visible = isSelected,
-                enter = fadeIn(spring(stiffness = Spring.StiffnessMediumLow)),
-                exit = fadeOut(spring(stiffness = Spring.StiffnessMediumLow))
-            ) {
-                Row {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = label,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = animatedContentColor
-                    )
-                }
-            }
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = animatedTint,
+            modifier = Modifier.size(22.dp)
+        )
     }
 }

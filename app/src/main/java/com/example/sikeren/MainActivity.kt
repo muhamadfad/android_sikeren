@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -83,14 +85,19 @@ fun SikerenApp() {
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Main content depending on active screen
-            if (selectedKegiatan != null) {
-                KegiatanDetailScreen(
-                    item = selectedKegiatan!!,
-                    onBack = { selectedKegiatan = null }
-                )
-            } else {
-                when (currentTab) {
+            // Soft animated transition between screens (crossfade without jerky jumps)
+            AnimatedContent(
+                targetState = if (selectedKegiatan != null) -1 else currentTab,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(180))
+                },
+                label = "screenTransition"
+            ) { targetScreen ->
+                when (targetScreen) {
+                    -1 -> KegiatanDetailScreen(
+                        item = selectedKegiatan!!,
+                        onBack = { selectedKegiatan = null }
+                    )
                     0 -> HomeScreen(
                         user = user,
                         dailySummary = dailySummary,
@@ -118,7 +125,6 @@ fun SikerenApp() {
                         onSubmitPresensi = { status, qrCode, ketDinas ->
                             coroutineScope.launch {
                                 ApiClient.submitPresensi(token, status, qrCode, ketDinas)
-                                // Refresh daily summary
                                 dailySummary = ApiClient.fetchDailySummary(token)
                             }
                         }
@@ -132,8 +138,10 @@ fun SikerenApp() {
                         }
                     )
                 }
+            }
 
-                // Modern Floating Bottom Pill Navigation Bar
+            // Minimalist Floating Bottom Dock (hidden in detail view, visible in main tabs)
+            if (selectedKegiatan == null) {
                 BottomFloatingDock(
                     currentTab = currentTab,
                     onTabSelected = { currentTab = it },
