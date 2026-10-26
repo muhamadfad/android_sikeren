@@ -16,6 +16,7 @@ import com.example.sikeren.network.ApiClient
 import com.example.sikeren.theme.SikerenTheme
 import com.example.sikeren.ui.components.BottomFloatingDock
 import com.example.sikeren.ui.screens.*
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -50,13 +51,19 @@ fun SikerenApp() {
     var kegiatanStats by remember { mutableStateOf(KegiatanStats()) }
     var kegiatanList by remember { mutableStateOf<List<KegiatanItem>>(emptyList()) }
 
-    // Load initial data
+    // Load initial data in parallel
     LaunchedEffect(isLoggedIn, token) {
         if (isLoggedIn) {
-            dailySummary = ApiClient.fetchDailySummary(token)
-            val (stats, list) = ApiClient.fetchKegiatan(token, type = "all")
-            kegiatanStats = stats
-            kegiatanList = list
+            coroutineScope.launch {
+                val summaryDeferred = async { ApiClient.fetchDailySummary(token) }
+                val kegiatanDeferred = async { ApiClient.fetchKegiatan(token, type = "all") }
+
+                val summary = summaryDeferred.await()
+                val kegiatanResult = kegiatanDeferred.await()
+                dailySummary = summary
+                kegiatanStats = kegiatanResult.first
+                kegiatanList = kegiatanResult.second
+            }
         }
     }
 

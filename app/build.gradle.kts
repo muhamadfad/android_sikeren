@@ -85,4 +85,11 @@ dependencies {
   // Icons & Network
   implementation("androidx.compose.material:material-icons-extended")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+  // Barcode & Live Camera QR Code
+  implementation("com.google.zxing:core:3.5.3")
+  implementation("androidx.camera:camera-camera2:1.3.4")
+  implementation("androidx.camera:camera-lifecycle:1.3.4")
+  implementation("androidx.camera:camera-view:1.3.4")
+  implementation("com.google.mlkit:barcode-scanning:17.3.0")
 }

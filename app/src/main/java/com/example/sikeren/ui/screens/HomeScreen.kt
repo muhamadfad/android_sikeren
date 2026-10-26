@@ -32,12 +32,17 @@ import com.example.sikeren.R
 import com.example.sikeren.model.*
 import com.example.sikeren.network.ApiClient
 import com.example.sikeren.theme.*
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
- * World-Class Modern Dashboard for SIKEREN Mobile
- * Designed with fluid spatial layout, zero box-in-box clutter,
- * and high-clarity glanceable information hierarchy.
+ * Responsive & Modern Dashboard for SIKEREN Mobile
+ * Optimized for ALL screen sizes (no rigid box-in-box; fluid layout, fast parallel async loading).
+ * Features:
+ * 1. Hero Presensi Card with 1-tap QR Check-in.
+ * 2. Live PST Guarding Strip (Active guardian, swap/claim request, pimpinan exempt, admin PST management).
+ * 3. Jadwal Rapat prominently placed with "Lepas Ruangan" quick action.
+ * 4. Notifications with Task Kegiatan & Sub-Kegiatan.
  */
 @Composable
 fun HomeScreen(
@@ -59,14 +64,23 @@ fun HomeScreen(
     var notifications by remember { mutableStateOf<List<NotificationItem>>(emptyList()) }
     var pstData by remember { mutableStateOf(dailySummary.pstData) }
     var rapatList by remember { mutableStateOf(dailySummary.rapatList) }
-    var activeFilterTab by remember { mutableStateOf(0) } // 0: Semua, 1: Rapat, 2: Kegiatan
+    var activeFilterTab by remember { mutableStateOf(1) } // Default to 1: Rapat
 
-    // Initial Live Sync
+    // Fast parallel async fetch (never blocks the UI thread)
     LaunchedEffect(Unit) {
-        notifications = ApiClient.fetchNotifications("token-user")
-        val livePst = ApiClient.fetchPstToday("token-user")
-        if (livePst.schedules.isNotEmpty()) {
-            pstData = livePst
+        coroutineScope.launch {
+            val notifsDeferred = async { ApiClient.fetchNotifications("token-user") }
+            val pstDeferred = async { ApiClient.fetchPstToday("token-user") }
+
+            val notifs = notifsDeferred.await()
+            if (notifs.isNotEmpty()) {
+                notifications = notifs
+            }
+
+            val livePst = pstDeferred.await()
+            if (livePst.schedules.isNotEmpty()) {
+                pstData = livePst
+            }
         }
     }
 
@@ -79,12 +93,12 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // =========================================================================
-            // 1. TOP APP BAR: Brand Identity, Profile & Notification
+            // 1. TOP HEADER (Responsive: Logo + User Greeting + Notif Bell)
             // =========================================================================
             item {
                 Row(
@@ -94,18 +108,20 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left: BPS Official Emblem + Personalized Greeting
+                    // Left: Official BPS logo + User Info
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { onNavigateToProfile() }
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onNavigateToProfile() }
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = CardBg,
                             shadowElevation = 2.dp,
                             modifier = Modifier
-                                .size(44.dp)
-                                .border(0.5.dp, BorderLight, RoundedCornerShape(14.dp))
+                                .size(42.dp)
+                                .border(0.5.dp, BorderLight, RoundedCornerShape(12.dp))
                         ) {
                             Box(
                                 modifier = Modifier
@@ -121,7 +137,7 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -147,18 +163,35 @@ fun HomeScreen(
                                             color = Color(0xFFB45309)
                                         )
                                     }
+                                } else if (user.isPimpinan) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(AccentPurpleSoft)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "PIMPINAN",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AccentPurple
+                                        )
+                                    }
                                 }
                             }
                             Text(
                                 text = "Halo, ${user.namaLengkap.split(" ").firstOrNull() ?: "Pegawai"} 👋",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimary
+                                color = TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    // Right: Notification Bell in Clean Circle
+                    // Right: Notification Bell in Soft Circle
                     Box(
                         modifier = Modifier
                             .size(42.dp)
@@ -190,12 +223,12 @@ fun HomeScreen(
             }
 
             // =========================================================================
-            // 2. HERO ATTENDANCE DASHBOARD (Single Cohesive Elevated Surface)
+            // 2. HERO ATTENDANCE CARD (Harmonious BPS Navy/Blue Gradient)
             // =========================================================================
             item {
                 Surface(
-                    shape = RoundedCornerShape(26.dp),
-                    shadowElevation = 8.dp,
+                    shape = RoundedCornerShape(22.dp),
+                    shadowElevation = 4.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
@@ -203,16 +236,13 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .background(
                                 Brush.linearGradient(
-                                    listOf(
-                                        Color(0xFF003865),
-                                        Color(0xFF0284C7)
-                                    )
+                                    listOf(BpsNavy, BpsBlue)
                                 )
                             )
-                            .padding(20.dp)
+                            .padding(18.dp)
                     ) {
                         Column {
-                            // Top Row: Date & Work Hours Tag
+                            // Top Date & Jam Kerja
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -222,12 +252,12 @@ fun HomeScreen(
                                     text = dailySummary.todayDate,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    color = Color.White.copy(alpha = 0.9f)
                                 )
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color.White.copy(alpha = 0.15f))
+                                        .background(Color.White.copy(alpha = 0.2f))
                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                 ) {
                                     Text(
@@ -239,9 +269,9 @@ fun HomeScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(18.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            // Main Action Row: Status Title & Scan QR Button
+                            // Main Status & Button
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -249,9 +279,9 @@ fun HomeScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Presensi Harian",
+                                        text = "Presensi Kantor BPS",
                                         fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.75f),
+                                        color = Color.White.copy(alpha = 0.8f),
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Row(
@@ -269,14 +299,14 @@ fun HomeScreen(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = dailySummary.presensi.label,
-                                            fontSize = 18.sp,
+                                            fontSize = 17.sp,
                                             fontWeight = FontWeight.Black,
                                             color = Color.White
                                         )
                                     }
                                     if (dailySummary.presensi.checkInTime != null) {
                                         Text(
-                                            text = "Masuk pukul ${dailySummary.presensi.checkInTime} WITA",
+                                            text = "Masuk: ${dailySummary.presensi.checkInTime} WITA",
                                             fontSize = 11.sp,
                                             color = Color.White.copy(alpha = 0.85f),
                                             modifier = Modifier.padding(top = 2.dp)
@@ -284,15 +314,14 @@ fun HomeScreen(
                                     }
                                 }
 
-                                // Tactile White Action Button
                                 Surface(
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     color = Color.White,
-                                    shadowElevation = 4.dp,
+                                    shadowElevation = 2.dp,
                                     modifier = Modifier.clickable { onNavigateToQr() }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
@@ -317,28 +346,29 @@ fun HomeScreen(
             }
 
             // =========================================================================
-            // 3. PST LIVE MONITORING STRIP (Glanceable, Fluid & Non-Intrusive)
+            // 3. JADWAL PST UNTUK MENJAGA (Live Desk, Tukar Shift, Bebas Pimpinan)
             // =========================================================================
             item {
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(18.dp),
                     color = CardBg,
-                    shadowElevation = 2.dp,
+                    shadowElevation = 1.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
+                        .border(1.dp, BorderLight, RoundedCornerShape(18.dp))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        // Live Guardian Row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Box(
                                     modifier = Modifier
                                         .size(32.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(8.dp))
                                         .background(BpsBlueLight),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -352,15 +382,17 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "Pelayanan Statistik Terpadu (PST)",
+                                        text = "Petugas Jaga PST Hari Ini",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = TextPrimary
                                     )
                                     Text(
-                                        text = "Petugas Aktif: ${pstData.activeGuardian} (${pstData.activeGuardianSesi})",
+                                        text = "${pstData.activeGuardian} (${pstData.activeGuardianSesi})",
                                         fontSize = 11.sp,
-                                        color = TextSecondary
+                                        color = TextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
@@ -380,18 +412,18 @@ fun HomeScreen(
                             }
                         }
 
-                        // PST Replacement Alert (If needed)
+                        // Urgent Replacement Request (Colleagues who are unable to attend)
                         if (pstData.replacementRequests.isNotEmpty() && !user.isPimpinan) {
                             val req = pstData.replacementRequests.first()
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Surface(
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = DangerRedSoft,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, DangerRed.copy(alpha = 0.25f)),
+                                border = androidx.compose.foundation.BorderStroke(0.5.dp, DangerRed.copy(alpha = 0.3f)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier.padding(10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -405,7 +437,9 @@ fun HomeScreen(
                                         Text(
                                             text = "${req.namaPetugas} berhalangan untuk ${req.sesiLabel}",
                                             fontSize = 11.sp,
-                                            color = TextSecondary
+                                            color = TextSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -420,8 +454,8 @@ fun HomeScreen(
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = AccentGreenDark),
-                                        shape = RoundedCornerShape(10.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text("Bantu Jaga", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
@@ -429,17 +463,17 @@ fun HomeScreen(
                             }
                         }
 
-                        // User's Own PST Assignment
+                        // User's Own PST Assignment (if assigned, and user is not pimpinan)
                         val myPst = pstData.mySchedule
-                        if (myPst != null) {
-                            Spacer(modifier = Modifier.height(10.dp))
+                        if (myPst != null && !user.isPimpinan) {
+                            Spacer(modifier = Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Jadwal Anda: ${myPst.sesiLabel}",
+                                    text = "Jadwal Tugas Anda: ${myPst.sesiLabel}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = BpsNavy
@@ -461,13 +495,20 @@ fun HomeScreen(
                                     )
                                 }
                             }
+                        } else if (user.isPimpinan) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "• Bebas Tugas Jaga PST (Jabatan Pimpinan)",
+                                fontSize = 11.sp,
+                                color = TextMuted
+                            )
                         }
                     }
                 }
             }
 
             // =========================================================================
-            // 4. UNIFIED AGENDA SECTION: Fluid Tabs & Modern Ticket Cards
+            // 4. JADWAL RAPAT & AGENDA (Prominent, No "Layanan")
             // =========================================================================
             item {
                 Row(
@@ -476,19 +517,14 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Agenda & Kegiatan",
-                        fontSize = 17.sp,
+                        text = "Jadwal Rapat & Agenda",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
 
-                    // Filter Segmented Buttons
+                    // Filter Tabs
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterPill(
-                            label = "Semua",
-                            isSelected = activeFilterTab == 0,
-                            onClick = { activeFilterTab = 0 }
-                        )
                         FilterPill(
                             label = "Rapat",
                             isSelected = activeFilterTab == 1,
@@ -499,34 +535,39 @@ fun HomeScreen(
                             isSelected = activeFilterTab == 2,
                             onClick = { activeFilterTab = 2 }
                         )
+                        FilterPill(
+                            label = "Semua",
+                            isSelected = activeFilterTab == 0,
+                            onClick = { activeFilterTab = 0 }
+                        )
                     }
                 }
             }
 
-            // Filtered Items List
-            val combinedList = when (activeFilterTab) {
+            // Items List
+            val displayList = when (activeFilterTab) {
                 1 -> rapatList
                 2 -> dailySummary.kegiatanToday.filter { it.jenis != "Rapat" }
                 else -> rapatList + dailySummary.kegiatanToday.filter { it.jenis != "Rapat" }
             }
 
-            if (combinedList.isEmpty()) {
+            if (displayList.isEmpty()) {
                 item {
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = CardBg,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
+                            .border(1.dp, BorderLight, RoundedCornerShape(16.dp))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(28.dp),
+                                .padding(24.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Tidak ada jadwal kegiatan untuk kategori ini.",
+                                text = "Tidak ada jadwal rapat untuk saat ini.",
                                 color = TextMuted,
                                 fontSize = 13.sp
                             )
@@ -534,8 +575,8 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(combinedList) { item ->
-                    AgendaTicketCard(
+                items(displayList) { item ->
+                    ResponsiveAgendaCard(
                         item = item,
                         onClick = { onSelectKegiatan(item) },
                         onLepasRuangan = { showLepasRuanganDialog = item }
@@ -545,28 +586,28 @@ fun HomeScreen(
         }
 
         // =========================================================================
-        // DIALOGS & OVERLAYS
+        // 5. DIALOGS (Notifikasi dengan Kegiatan & Sub-Kegiatan, Lepas Ruangan)
         // =========================================================================
-        // 1. Notification Sheet
+        // Notification Dialog with Task & Sub-Kegiatan detail
         if (showNotifDialog) {
             Dialog(onDismissRequest = { showNotifDialog = false }) {
                 Surface(
-                    shape = RoundedCornerShape(26.dp),
+                    shape = RoundedCornerShape(22.dp),
                     color = CardBg,
                     shadowElevation = 12.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 520.dp)
+                        .heightIn(max = 500.dp)
                 ) {
-                    Column(modifier = Modifier.padding(22.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Pemberitahuan",
-                                fontSize = 17.sp,
+                                text = "Notifikasi & Penugasan",
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
                             )
@@ -575,7 +616,7 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         if (notifications.isEmpty()) {
                             Box(
@@ -584,7 +625,7 @@ fun HomeScreen(
                                     .padding(vertical = 32.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("Tidak ada notifikasi baru.", color = TextMuted, fontSize = 13.sp)
+                                Text("Tidak ada notifikasi tugas baru.", color = TextMuted, fontSize = 13.sp)
                             }
                         } else {
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -592,27 +633,72 @@ fun HomeScreen(
                                     Surface(
                                         shape = RoundedCornerShape(14.dp),
                                         color = if (!notif.isRead) BpsBlueSubtle else SurfaceBg,
+                                        border = androidx.compose.foundation.BorderStroke(0.5.dp, BorderLight),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.padding(12.dp)) {
-                                            Text(
-                                                text = notif.judul,
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = TextPrimary
-                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = notif.judul,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = TextPrimary,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Text(
+                                                    text = notif.waktu,
+                                                    fontSize = 10.sp,
+                                                    color = TextMuted
+                                                )
+                                            }
+
                                             Text(
                                                 text = notif.pesan,
                                                 fontSize = 12.sp,
                                                 color = TextSecondary,
-                                                modifier = Modifier.padding(top = 2.dp)
+                                                modifier = Modifier.padding(top = 3.dp)
                                             )
-                                            Text(
-                                                text = notif.waktu,
-                                                fontSize = 10.sp,
-                                                color = TextMuted,
-                                                modifier = Modifier.padding(top = 4.dp)
-                                            )
+
+                                            // Sub-kegiatan tag if available
+                                            if (!notif.subKegiatan.isNullOrBlank() || !notif.kegiatanNama.isNullOrBlank()) {
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    if (!notif.kegiatanNama.isNullOrBlank()) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(6.dp))
+                                                                .background(BpsBlueLight)
+                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = notif.kegiatanNama,
+                                                                fontSize = 10.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = BpsNavy
+                                                            )
+                                                        }
+                                                    }
+                                                    if (!notif.subKegiatan.isNullOrBlank()) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(6.dp))
+                                                                .background(BpsAmberSoft)
+                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = notif.subKegiatan,
+                                                                fontSize = 10.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = Color(0xFFB45309)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -623,40 +709,40 @@ fun HomeScreen(
             }
         }
 
-        // 2. Dialog Lapor Berhalangan
+        // Dialog Lapor Berhalangan
         if (showBerhalanganDialog) {
             Dialog(onDismissRequest = { showBerhalanganDialog = false }) {
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = CardBg,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(22.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = "Lapor Berhalangan Jaga PST",
+                            text = "Lapor Berhalangan PST",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Sistem akan otomatis mengabarkan ke rekan kerja untuk mencari pengganti jaga Anda.",
+                            text = "Notifikasi akan dikirimkan ke rekan kerja non-pimpinan untuk mencari pengganti jadwal jaga Anda.",
                             fontSize = 12.sp,
                             color = TextSecondary
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         OutlinedTextField(
                             value = alasanBerhalangan,
                             onValueChange = { alasanBerhalangan = it },
                             label = { Text("Alasan Berhalangan", fontSize = 12.sp) },
-                            placeholder = { Text("Tugas dinas lapangan / Sakit / Izin...", fontSize = 12.sp) },
-                            shape = RoundedCornerShape(14.dp),
+                            placeholder = { Text("Tugas lapangan / Sakit / Izin...", fontSize = 12.sp) },
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth(),
                             maxLines = 3
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
@@ -672,14 +758,14 @@ fun HomeScreen(
                                         ApiClient.reportPstUnable("token-user", jadwalId, alasanBerhalangan)
                                         showBerhalanganDialog = false
                                         alasanBerhalangan = ""
-                                        snackbarMessage = "Laporan dikirim. Notifikasi disebarkan ke rekan!"
+                                        snackbarMessage = "Laporan dikirim. Notifikasi telah disebarkan!"
                                         pstData = ApiClient.fetchPstToday("token-user")
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text("Kirim Laporan", color = Color.White)
+                                Text("Kirim & Cari Pengganti", color = Color.White)
                             }
                         }
                     }
@@ -687,30 +773,30 @@ fun HomeScreen(
             }
         }
 
-        // 3. Dialog Lepas Ruangan
+        // Dialog Lepas Ruangan
         if (showLepasRuanganDialog != null) {
             val r = showLepasRuanganDialog!!
             Dialog(onDismissRequest = { showLepasRuanganDialog = null }) {
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = CardBg,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(22.dp)) {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = "Konfirmasi Lepas Ruangan",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Apakah rapat \"${r.judul}\" telah usai? Ruangan ${r.tempat} akan otomatis ditandai tersedia untuk rekan lainnya.",
-                            fontSize = 13.sp,
+                            text = "Apakah rapat \"${r.judul}\" telah selesai? Ruangan ${r.tempat} akan otomatis ditandai bebas agar bisa dipakai tim lain.",
+                            fontSize = 12.sp,
                             color = TextSecondary
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
@@ -730,7 +816,7 @@ fun HomeScreen(
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = BpsNavy),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text("Lepas Sekarang", color = Color.White)
                             }
@@ -742,9 +828,6 @@ fun HomeScreen(
     }
 }
 
-/**
- * Filter Pill Component
- */
 @Composable
 private fun FilterPill(
     label: String,
@@ -753,11 +836,11 @@ private fun FilterPill(
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) BpsNavy else CardBg)
-            .border(1.dp, if (isSelected) BpsNavy else BorderLight, RoundedCornerShape(12.dp))
+            .border(1.dp, if (isSelected) BpsNavy else BorderLight, RoundedCornerShape(10.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
         Text(
             text = label,
@@ -769,59 +852,31 @@ private fun FilterPill(
 }
 
 /**
- * Modern Ticket-Style Agenda Card
+ * Responsive Agenda Card (Adapts to all phone screen widths)
  */
 @Composable
-private fun AgendaTicketCard(
+private fun ResponsiveAgendaCard(
     item: KegiatanItem,
     onClick: () -> Unit,
     onLepasRuangan: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         color = CardBg,
-        shadowElevation = 2.dp,
+        shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
+            .border(1.dp, BorderLight, RoundedCornerShape(16.dp))
             .clickable { onClick() }
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left Time Column
-            Column(
-                modifier = Modifier
-                    .width(80.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(BpsBlueSubtle)
-                    .padding(vertical = 10.dp, horizontal = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Header Row: Time + Status Badge + Quick Action
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.jamDisplay.split(" - ").firstOrNull() ?: item.jamDisplay,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = BpsNavy
-                )
-                Text(
-                    text = "WITA",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextSecondary
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            // Main Info Column
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
@@ -830,37 +885,67 @@ private fun AgendaTicketCard(
                     ) {
                         Text(
                             text = item.jenis,
-                            fontSize = 9.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (item.jenis == "Rapat") BpsNavy else Color(0xFFB45309)
                         )
                     }
-
-                    if (item.jenis == "Rapat" && item.statusRuangan == "Dipakai") {
-                        Text(
-                            text = "Lepas Ruangan",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = BpsNavy,
-                            modifier = Modifier.clickable { onLepasRuangan() }
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = item.jamDisplay,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BpsNavy
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                if (item.jenis == "Rapat" && item.statusRuangan == "Dipakai") {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(BpsBlueSubtle)
+                            .border(0.5.dp, BpsBlue.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .clickable { onLepasRuangan() }
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "Lepas Ruangan",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BpsNavy
+                        )
+                    }
+                } else if (item.statusRuangan == "Telah Dilepas (Tersedia)") {
+                    Text(
+                        text = "Tersedia",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentGreenDark
+                    )
+                }
+            }
 
-                Text(
-                    text = item.judul,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Spacer(modifier = Modifier.height(6.dp))
 
-                Spacer(modifier = Modifier.height(4.dp))
+            // Title (Max 2 lines, responsive)
+            Text(
+                text = item.judul,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Location & Leader Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Icon(
                         imageVector = Icons.Default.Place,
                         contentDescription = null,
@@ -876,14 +961,17 @@ private fun AgendaTicketCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = TextMuted,
-                modifier = Modifier.size(18.dp)
-            )
+                if (!item.pemimpin.isNullOrBlank() && item.pemimpin != "-") {
+                    Text(
+                        text = "PIC: ${item.pemimpin}",
+                        fontSize = 10.sp,
+                        color = TextMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
     }
 }
