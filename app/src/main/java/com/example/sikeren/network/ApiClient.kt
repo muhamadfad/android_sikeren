@@ -12,8 +12,16 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    // 10.0.2.2 is Android emulator alias for localhost; fallback to 127.0.0.1 or local IP
-    var baseUrl = "http://10.0.2.2:8000/api/v1"
+    var primaryHost: String = "club-postposted-flights-son.trycloudflare.com"
+    var localHost: String = "192.168.50.49:8000"
+    var activeHost: String = primaryHost
+
+    val baseUrl: String
+        get() {
+            val host = activeHost.trim().removePrefix("http://").removePrefix("https://").trimEnd('/')
+            val scheme = if (host.contains("trycloudflare.com") || host.startsWith("https")) "https" else "http"
+            return "$scheme://$host/api/v1"
+        }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(5, TimeUnit.SECONDS)
