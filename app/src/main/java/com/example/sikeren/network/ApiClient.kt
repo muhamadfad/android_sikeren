@@ -177,7 +177,7 @@ object ApiClient {
                         niplama = "340019879",
                         namaPetugas = "Yunus Samuel Tandi Bua",
                         statusKehadiran = myScheduleJson.optString("status_kehadiran", "Terjadwal"),
-                        alasanBerhalangan = myScheduleJson.optString("alasan", null),
+                        alasanBerhalangan = if (myScheduleJson.has("alasan") && !myScheduleJson.isNull("alasan")) myScheduleJson.getString("alasan") else null,
                         statusTukar = myScheduleJson.optString("status_tukar", "none")
                     )
                 } else null

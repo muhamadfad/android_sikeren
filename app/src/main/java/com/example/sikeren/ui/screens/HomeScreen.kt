@@ -1,16 +1,17 @@
 package com.example.sikeren.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -21,16 +22,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.sikeren.R
 import com.example.sikeren.model.*
 import com.example.sikeren.network.ApiClient
 import com.example.sikeren.theme.*
 import kotlinx.coroutines.launch
 
+/**
+ * World-Class Modern Dashboard for SIKEREN Mobile
+ * Designed with fluid spatial layout, zero box-in-box clutter,
+ * and high-clarity glanceable information hierarchy.
+ */
 @Composable
 fun HomeScreen(
     user: UserProfile,
@@ -42,7 +50,6 @@ fun HomeScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    var searchQuery by remember { mutableStateOf("") }
     var showNotifDialog by remember { mutableStateOf(false) }
     var showBerhalanganDialog by remember { mutableStateOf(false) }
     var showLepasRuanganDialog by remember { mutableStateOf<KegiatanItem?>(null) }
@@ -52,8 +59,9 @@ fun HomeScreen(
     var notifications by remember { mutableStateOf<List<NotificationItem>>(emptyList()) }
     var pstData by remember { mutableStateOf(dailySummary.pstData) }
     var rapatList by remember { mutableStateOf(dailySummary.rapatList) }
+    var activeFilterTab by remember { mutableStateOf(0) } // 0: Semua, 1: Rapat, 2: Kegiatan
 
-    // Fetch initial notifications and PST data
+    // Initial Live Sync
     LaunchedEffect(Unit) {
         notifications = ApiClient.fetchNotifications("token-user")
         val livePst = ApiClient.fetchPstToday("token-user")
@@ -67,122 +75,101 @@ fun HomeScreen(
             .fillMaxSize()
             .background(SurfaceBg)
     ) {
-        // Top Background Gradient in BPS Official Deep Navy
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(260.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            BpsNavy,
-                            BpsBlue.copy(alpha = 0.85f),
-                            SurfaceBg
-                        )
-                    )
-                )
-        )
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Top Bar: BPS Identity, Avatar & Notification Bell
+            // =========================================================================
+            // 1. TOP APP BAR: Brand Identity, Profile & Notification
+            // =========================================================================
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Profile Avatar & Satker Tag
+                    // Left: BPS Official Emblem + Personalized Greeting
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable { onNavigateToProfile() }
                     ) {
-                        Box(
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = CardBg,
+                            shadowElevation = 2.dp,
                             modifier = Modifier
-                                .size(46.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .border(1.5.dp, Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
+                                .size(44.dp)
+                                .border(0.5.dp, BorderLight, RoundedCornerShape(14.dp))
                         ) {
-                            Text(
-                                text = user.namaLengkap.take(2).uppercase(),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.logo_bps_official),
+                                    contentDescription = "Logo BPS",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
+
                         Spacer(modifier = Modifier.width(12.dp))
+
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "BPS SULTRA",
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = BpsAmber,
-                                    letterSpacing = 1.sp
+                                    color = BpsNavy,
+                                    letterSpacing = 0.8.sp
                                 )
                                 if (user.isAdminPst) {
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(BpsAmber.copy(alpha = 0.25f))
+                                            .background(BpsAmberSoft)
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
                                             text = "ADMIN PST",
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
-                                } else if (user.isPimpinan) {
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(AccentPurple.copy(alpha = 0.25f))
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            text = "PIMPINAN",
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = Color(0xFFB45309)
                                         )
                                     }
                                 }
                             }
                             Text(
-                                text = user.namaLengkap,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                text = "Halo, ${user.namaLengkap.split(" ").firstOrNull() ?: "Pegawai"} 👋",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
                             )
                         }
                     }
 
-                    // Notification Bell with Badge & Click Handler
+                    // Right: Notification Bell in Clean Circle
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .shadow(2.dp, CircleShape)
+                            .size(42.dp)
                             .clip(CircleShape)
                             .background(CardBg)
+                            .border(1.dp, BorderLight, CircleShape)
                             .clickable { showNotifDialog = true },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
+                            imageVector = Icons.Default.NotificationsNone,
                             contentDescription = "Notifikasi",
                             tint = BpsNavy,
                             modifier = Modifier.size(22.dp)
@@ -191,209 +178,157 @@ fun HomeScreen(
                         if (unreadCount > 0) {
                             Box(
                                 modifier = Modifier
-                                    .size(18.dp)
+                                    .size(10.dp)
                                     .align(Alignment.TopEnd)
-                                    .offset(x = 2.dp, y = (-2).dp)
+                                    .offset(x = (-4).dp, y = 4.dp)
                                     .clip(CircleShape)
-                                    .background(DangerRed),
-                                contentAlignment = Alignment.Center
+                                    .background(DangerRed)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // =========================================================================
+            // 2. HERO ATTENDANCE DASHBOARD (Single Cohesive Elevated Surface)
+            // =========================================================================
+            item {
+                Surface(
+                    shape = RoundedCornerShape(26.dp),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color(0xFF003865),
+                                        Color(0xFF0284C7)
+                                    )
+                                )
+                            )
+                            .padding(20.dp)
+                    ) {
+                        Column {
+                            // Top Row: Date & Work Hours Tag
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "$unreadCount",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = dailySummary.todayDate,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White.copy(alpha = 0.85f)
                                 )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.White.copy(alpha = 0.15f))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = "07:30 - 16:00 WITA",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            // Main Action Row: Status Title & Scan QR Button
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Presensi Harian",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.75f),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (dailySummary.presensi.hasCheckedIn) AccentGreen else BpsAmber
+                                                )
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = dailySummary.presensi.label,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White
+                                        )
+                                    }
+                                    if (dailySummary.presensi.checkInTime != null) {
+                                        Text(
+                                            text = "Masuk pukul ${dailySummary.presensi.checkInTime} WITA",
+                                            fontSize = 11.sp,
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            modifier = Modifier.padding(top = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                // Tactile White Action Button
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color.White,
+                                    shadowElevation = 4.dp,
+                                    modifier = Modifier.clickable { onNavigateToQr() }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.QrCodeScanner,
+                                            contentDescription = null,
+                                            tint = BpsNavy,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Scan QR",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = BpsNavy
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // 2. Greeting Headline
+            // =========================================================================
+            // 3. PST LIVE MONITORING STRIP (Glanceable, Fluid & Non-Intrusive)
+            // =========================================================================
             item {
-                Column(modifier = Modifier.padding(top = 4.dp)) {
-                    Text(
-                        text = "SIKEREN MOBILE",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BpsAmber,
-                        letterSpacing = 1.2.sp
-                    )
-                    Text(
-                        text = "Sistem Kegiatan Terencana",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = dailySummary.todayDate,
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-            }
-
-            // 3. Search Bar
-            item {
-                Box(
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = CardBg,
+                    shadowElevation = 2.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(2.dp, RoundedCornerShape(20.dp))
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(CardBg)
-                        .padding(horizontal = 14.dp, vertical = 11.dp)
+                        .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Cari",
-                                tint = TextMuted,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (searchQuery.isEmpty()) "Cari rapat, kegiatan, atau agenda BPS..." else searchQuery,
-                                color = if (searchQuery.isEmpty()) TextMuted else TextPrimary,
-                                fontSize = 13.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = "Filter",
-                            tint = BpsNavy,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clickable { onNavigateToKegiatan() }
-                        )
-                    }
-                }
-            }
-
-            // 4. Presensi & Absensi QR Card
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Presensi Kantor BPS",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = TextPrimary
-                                )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(top = 3.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AccessTime,
-                                        contentDescription = null,
-                                        tint = TextSecondary,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Jam Kerja 07:30 - 16:00 WITA",
-                                        fontSize = 12.sp,
-                                        color = TextSecondary
-                                    )
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(BpsBlueLight),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCodeScanner,
-                                    contentDescription = null,
-                                    tint = BpsNavy,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = dailySummary.presensi.label,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (dailySummary.presensi.hasCheckedIn) AccentGreen else BpsAmber
-                                )
-                                if (dailySummary.presensi.checkInTime != null) {
-                                    Text(
-                                        text = "Masuk: ${dailySummary.presensi.checkInTime} WITA",
-                                        fontSize = 12.sp,
-                                        color = TextSecondary
-                                    )
-                                }
-                            }
-
-                            Button(
-                                onClick = { onNavigateToQr() },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = BpsNavy),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 9.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCode,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = Color.White
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Scan QR",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 5. FITUR PST: Petugas Jaga PST Hari Ini (Live Counter)
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -402,8 +337,8 @@ fun HomeScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .size(32.dp)
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(BpsBlueLight),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -411,19 +346,19 @@ fun HomeScreen(
                                         imageVector = Icons.Default.SupportAgent,
                                         contentDescription = null,
                                         tint = BpsNavy,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "Petugas Jaga PST Hari Ini",
+                                        text = "Pelayanan Statistik Terpadu (PST)",
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
                                         color = TextPrimary
                                     )
                                     Text(
-                                        text = "Pelayanan Statistik Terpadu BPS",
+                                        text = "Petugas Aktif: ${pstData.activeGuardian} (${pstData.activeGuardianSesi})",
                                         fontSize = 11.sp,
                                         color = TextSecondary
                                     )
@@ -432,218 +367,98 @@ fun HomeScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(6.dp))
                                     .background(AccentGreenSoft)
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    .padding(horizontal = 7.dp, vertical = 2.dp)
                             ) {
                                 Text(
                                     text = "LIVE",
-                                    fontSize = 10.sp,
+                                    fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = AccentGreen
+                                    color = AccentGreenDark
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Active Guard Details Box
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(SurfaceBg)
-                                .border(1.dp, BorderLight, RoundedCornerShape(14.dp))
-                                .padding(14.dp)
-                        ) {
-                            Column {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Sedang Bertugas Sekarang:",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextSecondary
-                                    )
-                                    Text(
-                                        text = pstData.activeGuardianSesi,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = BpsNavy
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = pstData.activeGuardian,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = TextPrimary
-                                )
-                                if (pstData.isReplacement) {
-                                    Text(
-                                        text = "• Bertugas sebagai Petugas Pengganti",
-                                        fontSize = 11.sp,
-                                        color = BpsAmber,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-
-                        // User's own PST assignment (if assigned)
-                        val myPst = pstData.mySchedule
-                        if (myPst != null) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(BpsAmberSoft)
-                                    .border(1.dp, BpsAmber.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
-                                    .padding(14.dp)
-                            ) {
-                                Column {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "Jadwal Tugas Anda:",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TextPrimary
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(BpsAmber)
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = myPst.statusKehadiran,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = myPst.sesiLabel,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = TextPrimary,
-                                        modifier = Modifier.padding(vertical = 2.dp)
-                                    )
-
-                                    if (myPst.statusKehadiran == "Berhalangan") {
-                                        Text(
-                                            text = "Status: Berhalangan (Mencari Rekan Pengganti)",
-                                            fontSize = 11.sp,
-                                            color = DangerRed,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    } else {
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        OutlinedButton(
-                                            onClick = { showBerhalanganDialog = true },
-                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed),
-                                            shape = RoundedCornerShape(12.dp),
-                                            modifier = Modifier.fillMaxWidth(),
-                                            contentPadding = PaddingValues(vertical = 6.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.EventBusy,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "Saya Berhalangan Hadir (Minta Pengganti)",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Open Replacement Request from colleagues
+                        // PST Replacement Alert (If needed)
                         if (pstData.replacementRequests.isNotEmpty() && !user.isPimpinan) {
+                            val req = pstData.replacementRequests.first()
                             Spacer(modifier = Modifier.height(12.dp))
-                            val repReq = pstData.replacementRequests.first()
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(DangerRedSoft)
-                                    .border(1.dp, DangerRed.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
-                                    .padding(14.dp)
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = DangerRedSoft,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, DangerRed.copy(alpha = 0.25f)),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Warning,
-                                            contentDescription = null,
-                                            tint = DangerRed,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = "Butuh Pengganti Jaga PST!",
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = DangerRed
+                                            color = DangerRedDark
                                         )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "${repReq.namaPetugas} berhalangan untuk ${repReq.sesiLabel}.",
-                                        fontSize = 12.sp,
-                                        color = TextPrimary
-                                    )
-                                    if (!repReq.alasanBerhalangan.isNullOrBlank()) {
                                         Text(
-                                            text = "Alasan: \"${repReq.alasanBerhalangan}\"",
+                                            text = "${req.namaPetugas} berhalangan untuk ${req.sesiLabel}",
                                             fontSize = 11.sp,
-                                            color = TextSecondary,
-                                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                            color = TextSecondary
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Button(
                                         onClick = {
                                             coroutineScope.launch {
-                                                val success = ApiClient.claimPstReplacement("token-user", repReq.id)
+                                                val success = ApiClient.claimPstReplacement("token-user", req.id)
                                                 if (success) {
                                                     snackbarMessage = "Terima kasih! Anda resmi terdaftar menggantikan jaga PST."
                                                     pstData = ApiClient.fetchPstToday("token-user")
                                                 }
                                             }
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = AccentGreen),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentPadding = PaddingValues(vertical = 8.dp)
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentGreenDark),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = Color.White
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "Saya Bersedia Menggantikan",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
+                                        Text("Bantu Jaga", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
+                                }
+                            }
+                        }
+
+                        // User's Own PST Assignment
+                        val myPst = pstData.mySchedule
+                        if (myPst != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Jadwal Anda: ${myPst.sesiLabel}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = BpsNavy
+                                )
+                                if (myPst.statusKehadiran != "Berhalangan") {
+                                    Text(
+                                        text = "Lapor Berhalangan",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = DangerRed,
+                                        modifier = Modifier.clickable { showBerhalanganDialog = true }
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Status: Berhalangan",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = DangerRed
+                                    )
                                 }
                             }
                         }
@@ -651,63 +466,67 @@ fun HomeScreen(
                 }
             }
 
-            // 6. FITUR JADWAL RAPAT (Menggantikan Layanan yang Dihapus)
+            // =========================================================================
+            // 4. UNIFIED AGENDA SECTION: Fluid Tabs & Modern Ticket Cards
+            // =========================================================================
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(BpsBlueLight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Groups,
-                                contentDescription = null,
-                                tint = BpsNavy,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Jadwal Rapat Terjadwal",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                    Text(
+                        text = "Agenda & Kegiatan",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    // Filter Segmented Buttons
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterPill(
+                            label = "Semua",
+                            isSelected = activeFilterTab == 0,
+                            onClick = { activeFilterTab = 0 }
+                        )
+                        FilterPill(
+                            label = "Rapat",
+                            isSelected = activeFilterTab == 1,
+                            onClick = { activeFilterTab = 1 }
+                        )
+                        FilterPill(
+                            label = "Kegiatan",
+                            isSelected = activeFilterTab == 2,
+                            onClick = { activeFilterTab = 2 }
                         )
                     }
-
-                    Text(
-                        text = "Semua Rapat",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BpsNavy,
-                        modifier = Modifier.clickable { onNavigateToKegiatan() }
-                    )
                 }
             }
 
-            // Rapat Items List
-            if (rapatList.isEmpty()) {
+            // Filtered Items List
+            val combinedList = when (activeFilterTab) {
+                1 -> rapatList
+                2 -> dailySummary.kegiatanToday.filter { it.jenis != "Rapat" }
+                else -> rapatList + dailySummary.kegiatanToday.filter { it.jenis != "Rapat" }
+            }
+
+            if (combinedList.isEmpty()) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = CardBg)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = CardBg,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(28.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Tidak ada jadwal rapat untuk saat ini.",
+                                text = "Tidak ada jadwal kegiatan untuk kategori ini.",
                                 color = TextMuted,
                                 fontSize = 13.sp
                             )
@@ -715,257 +534,129 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(rapatList) { rapat ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelectKegiatan(rapat) },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = CardBg),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            // Header: Room status badge & Time
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (rapat.isToday) BpsBlueLight else SurfaceBg)
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = "${rapat.hari}, ${rapat.tanggalDisplay}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (rapat.isToday) BpsNavy else TextSecondary
-                                    )
-                                }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Schedule,
-                                        contentDescription = null,
-                                        tint = TextSecondary,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = rapat.jamDisplay,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextSecondary
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // Meeting Title
-                            Text(
-                                text = rapat.judul,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-
-                            // Room & Leader
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Place,
-                                    contentDescription = null,
-                                    tint = BpsNavy,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = rapat.tempat,
-                                    fontSize = 12.sp,
-                                    color = TextSecondary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = TextMuted,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Pemimpin: ${rapat.pemimpin}",
-                                    fontSize = 12.sp,
-                                    color = TextSecondary
-                                )
-                            }
-
-                            // Ruangan & Action (Pelepasan Ruangan)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(AccentGreenSoft)
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = "Status: ${rapat.statusRuangan}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AccentGreen
-                                    )
-                                }
-
-                                OutlinedButton(
-                                    onClick = { showLepasRuanganDialog = rapat },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = BpsNavy),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.MeetingRoom,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Lepas Ruangan",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 7. Agenda Kegiatan Lainnya
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Kegiatan & Tugas Terencana",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = "Buka Agenda",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = BpsNavy,
-                        modifier = Modifier.clickable { onNavigateToKegiatan() }
+                items(combinedList) { item ->
+                    AgendaTicketCard(
+                        item = item,
+                        onClick = { onSelectKegiatan(item) },
+                        onLepasRuangan = { showLepasRuanganDialog = item }
                     )
                 }
             }
+        }
 
-            items(dailySummary.kegiatanToday.filter { it.jenis != "Rapat" }) { item ->
-                Card(
+        // =========================================================================
+        // DIALOGS & OVERLAYS
+        // =========================================================================
+        // 1. Notification Sheet
+        if (showNotifDialog) {
+            Dialog(onDismissRequest = { showNotifDialog = false }) {
+                Surface(
+                    shape = RoundedCornerShape(26.dp),
+                    color = CardBg,
+                    shadowElevation = 12.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelectKegiatan(item) },
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        .heightIn(max = 520.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(22.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = item.judul,
-                                fontSize = 14.sp,
+                                text = "Pemberitahuan",
+                                fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${item.jamDisplay} • ${item.tempat}",
-                                fontSize = 12.sp,
-                                color = TextSecondary
-                            )
+                            IconButton(onClick = { showNotifDialog = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Tutup", tint = TextSecondary)
+                            }
                         }
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = TextMuted
-                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (notifications.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Tidak ada notifikasi baru.", color = TextMuted, fontSize = 13.sp)
+                            }
+                        } else {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                items(notifications) { notif ->
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = if (!notif.isRead) BpsBlueSubtle else SurfaceBg,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Text(
+                                                text = notif.judul,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = TextPrimary
+                                            )
+                                            Text(
+                                                text = notif.pesan,
+                                                fontSize = 12.sp,
+                                                color = TextSecondary,
+                                                modifier = Modifier.padding(top = 2.dp)
+                                            )
+                                            Text(
+                                                text = notif.waktu,
+                                                fontSize = 10.sp,
+                                                color = TextMuted,
+                                                modifier = Modifier.padding(top = 4.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // DIALOG: Laporan Berhalangan Jaga PST
+        // 2. Dialog Lapor Berhalangan
         if (showBerhalanganDialog) {
             Dialog(onDismissRequest = { showBerhalanganDialog = false }) {
-                Card(
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = CardBg,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(22.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(DangerRedSoft),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.EventBusy,
-                                    contentDescription = null,
-                                    tint = DangerRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Lapor Berhalangan PST",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "Sistem akan mengirimkan notifikasi ke seluruh rekan pegawai yang sedang tidak bertugas untuk mencari pengganti jaga PST Anda.",
+                            text = "Lapor Berhalangan Jaga PST",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Sistem akan otomatis mengabarkan ke rekan kerja untuk mencari pengganti jaga Anda.",
                             fontSize = 12.sp,
                             color = TextSecondary
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         OutlinedTextField(
                             value = alasanBerhalangan,
                             onValueChange = { alasanBerhalangan = it },
-                            label = { Text("Alasan Berhalangan") },
-                            placeholder = { Text("Contoh: Tugas verifikasi lapangan / Sakit / Izin dinas...") },
+                            label = { Text("Alasan Berhalangan", fontSize = 12.sp) },
+                            placeholder = { Text("Tugas dinas lapangan / Sakit / Izin...", fontSize = 12.sp) },
+                            shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth(),
-                            maxLines = 3,
-                            shape = RoundedCornerShape(12.dp)
+                            maxLines = 3
                         )
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
@@ -981,14 +672,14 @@ fun HomeScreen(
                                         ApiClient.reportPstUnable("token-user", jadwalId, alasanBerhalangan)
                                         showBerhalanganDialog = false
                                         alasanBerhalangan = ""
-                                        snackbarMessage = "Laporan berhalangan dikirim! Notifikasi disebarkan ke rekan yang tidak bertugas."
+                                        snackbarMessage = "Laporan dikirim. Notifikasi disebarkan ke rekan!"
                                         pstData = ApiClient.fetchPstToday("token-user")
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Kirim & Cari Pengganti", color = Color.White)
+                                Text("Kirim Laporan", color = Color.White)
                             }
                         }
                     }
@@ -996,48 +687,30 @@ fun HomeScreen(
             }
         }
 
-        // DIALOG: Lepas Ruangan Rapat
+        // 3. Dialog Lepas Ruangan
         if (showLepasRuanganDialog != null) {
-            val rapat = showLepasRuanganDialog!!
+            val r = showLepasRuanganDialog!!
             Dialog(onDismissRequest = { showLepasRuanganDialog = null }) {
-                Card(
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = CardBg,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(22.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(BpsBlueLight),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MeetingRoom,
-                                    contentDescription = null,
-                                    tint = BpsNavy,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Konfirmasi Lepas Ruangan",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "Apakah rapat \"${rapat.judul}\" telah selesai? Tindakan ini akan melepaskan ${rapat.tempat} dan menyiarkan notifikasi ketersediaan ruangan ke seluruh pegawai.",
+                            text = "Konfirmasi Lepas Ruangan",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Apakah rapat \"${r.judul}\" telah usai? Ruangan ${r.tempat} akan otomatis ditandai tersedia untuk rekan lainnya.",
                             fontSize = 13.sp,
                             color = TextSecondary
                         )
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
@@ -1049,12 +722,10 @@ fun HomeScreen(
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
-                                        ApiClient.releaseRoom("token-user", rapat.id, rapat.tempat)
+                                        ApiClient.releaseRoom("token-user", r.id, r.tempat)
                                         showLepasRuanganDialog = null
-                                        snackbarMessage = "Ruangan ${rapat.tempat} berhasil dilepaskan. Notifikasi telah disebarkan!"
-                                        // Update status locally
                                         rapatList = rapatList.map {
-                                            if (it.id == rapat.id) it.copy(statusRuangan = "Telah Dilepas (Tersedia)") else it
+                                            if (it.id == r.id) it.copy(statusRuangan = "Telah Dilepas (Tersedia)") else it
                                         }
                                     }
                                 },
@@ -1068,217 +739,151 @@ fun HomeScreen(
                 }
             }
         }
+    }
+}
 
-        // DIALOG: NOTIFICATION SHEET DENGAN TUGAS KEGIATAN & SUB-KEGIATAN
-        if (showNotifDialog) {
-            Dialog(onDismissRequest = { showNotifDialog = false }) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 560.dp)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = null,
-                                    tint = BpsNavy
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Notifikasi & Penugasan",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                            }
-                            IconButton(onClick = { showNotifDialog = false }) {
-                                Icon(imageVector = Icons.Default.Close, contentDescription = "Tutup")
-                            }
-                        }
+/**
+ * Filter Pill Component
+ */
+@Composable
+private fun FilterPill(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) BpsNavy else CardBg)
+            .border(1.dp, if (isSelected) BpsNavy else BorderLight, RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isSelected) Color.White else TextSecondary
+        )
+    }
+}
 
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f, fill = false)
-                        ) {
-                            if (notifications.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(30.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("Belum ada notifikasi baru.", color = TextMuted, fontSize = 13.sp)
-                                    }
-                                }
-                            } else {
-                                items(notifications) { notif ->
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(if (notif.isRead) SurfaceBg else BpsBlueLight.copy(alpha = 0.5f))
-                                            .border(
-                                                1.dp,
-                                                if (notif.isRead) BorderLight else BpsBlue.copy(alpha = 0.3f),
-                                                RoundedCornerShape(14.dp)
-                                            )
-                                            .padding(12.dp)
-                                    ) {
-                                        Column {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = notif.judul,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp,
-                                                    color = TextPrimary
-                                                )
-                                                Text(
-                                                    text = notif.waktu,
-                                                    fontSize = 10.sp,
-                                                    color = TextSecondary
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = notif.pesan,
-                                                fontSize = 12.sp,
-                                                color = TextSecondary
-                                            )
-
-                                            // Tugas Kegiatan & Sub-Kegiatan Tags
-                                            if (!notif.kegiatanNama.isNullOrBlank() || !notif.subKegiatan.isNullOrBlank()) {
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                                Row(
-                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    if (!notif.kegiatanNama.isNullOrBlank()) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .clip(RoundedCornerShape(6.dp))
-                                                                .background(BpsNavy.copy(alpha = 0.12f))
-                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                                        ) {
-                                                            Text(
-                                                                text = "Kegiatan: ${notif.kegiatanNama}",
-                                                                fontSize = 10.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = BpsNavy
-                                                            )
-                                                        }
-                                                    }
-                                                    if (!notif.subKegiatan.isNullOrBlank()) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .clip(RoundedCornerShape(6.dp))
-                                                                .background(BpsAmber.copy(alpha = 0.18f))
-                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                                        ) {
-                                                            Text(
-                                                                text = "Sub: ${notif.subKegiatan}",
-                                                                fontSize = 10.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = Color(0xFFB45309)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            // Mark as read action
-                                            if (!notif.isRead) {
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                Text(
-                                                    text = "Tandai sudah dibaca",
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = BpsNavy,
-                                                    modifier = Modifier
-                                                        .align(Alignment.End)
-                                                        .clickable {
-                                                            coroutineScope.launch {
-                                                                ApiClient.markNotificationRead("token-user", notif.id)
-                                                                notifications = notifications.map {
-                                                                    if (it.id == notif.id) it.copy(isRead = true) else it
-                                                                }
-                                                            }
-                                                        }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Button(
-                            onClick = { showNotifDialog = false },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = BpsNavy),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Selesai", color = Color.White)
-                        }
-                    }
-                }
-            }
-        }
-
-        // SNACKBAR ALERT NOTIFICATION
-        if (snackbarMessage != null) {
-            Box(
+/**
+ * Modern Ticket-Style Agenda Card
+ */
+@Composable
+private fun AgendaTicketCard(
+    item: KegiatanItem,
+    onClick: () -> Unit,
+    onLepasRuangan: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = CardBg,
+        shadowElevation = 2.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Time Column
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 90.dp, start = 16.dp, end = 16.dp)
+                    .width(80.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(BpsBlueSubtle)
+                    .padding(vertical = 10.dp, horizontal = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                Text(
+                    text = item.jamDisplay.split(" - ").firstOrNull() ?: item.jamDisplay,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = BpsNavy
+                )
+                Text(
+                    text = "WITA",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextSecondary
+                )
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Main Info Column
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (item.jenis == "Rapat") BpsBlueLight else BpsAmberSoft)
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = snackbarMessage!!,
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Tutup",
-                            color = BpsAmber,
+                            text = item.jenis,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            modifier = Modifier.clickable { snackbarMessage = null }
+                            color = if (item.jenis == "Rapat") BpsNavy else Color(0xFFB45309)
+                        )
+                    }
+
+                    if (item.jenis == "Rapat" && item.statusRuangan == "Dipakai") {
+                        Text(
+                            text = "Lepas Ruangan",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BpsNavy,
+                            modifier = Modifier.clickable { onLepasRuangan() }
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = item.judul,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = item.tempat,
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = TextMuted,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
