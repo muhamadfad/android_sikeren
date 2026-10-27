@@ -47,6 +47,10 @@ val AccentGreen = Color(0xFF10B981)       // Success / Checked In / Available
 val AccentGreenDark = Color(0xFF059669)   // Dark Green for High Contrast
 val AccentGreenSoft = Color(0xFFECFDF5)   // Light Green Surface
 
+val AccentOrange = Color(0xFFF59E0B)      // Warning / Pending / Satpam Accent
+val AccentOrangeDark = Color(0xFFD97706)
+val AccentOrangeSoft = Color(0xFFFEF3C7)
+
 val AccentBlue = Color(0xFF2563EB)        // Informative / Links
 val AccentBlueSoft = Color(0xFFEFF6FF)
 

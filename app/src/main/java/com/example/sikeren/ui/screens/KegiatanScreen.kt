@@ -65,7 +65,6 @@ fun KegiatanScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(bottom = 80.dp)
         ) {
             // Top Bar
             Row(
@@ -183,7 +182,7 @@ fun KegiatanScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 140.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 if (filteredList.isEmpty()) {

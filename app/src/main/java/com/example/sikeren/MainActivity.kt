@@ -46,7 +46,7 @@ fun SikerenApp() {
     var user by remember { mutableStateOf(UserProfile()) }
     var token by remember { mutableStateOf("") }
 
-    var currentTab by remember { mutableStateOf(0) } // 0: Home, 1: Kegiatan, 2: QR Absensi, 3: Profil
+    var currentTab by remember { mutableStateOf(0) } // 0: Home, 1: Kegiatan, 2: QR Absensi, 3: Profil, 4: Dashboard Keseluruhan
     var selectedKegiatan by remember { mutableStateOf<KegiatanItem?>(null) }
 
     var dailySummary by remember { mutableStateOf(DailySummary()) }
@@ -54,18 +54,22 @@ fun SikerenApp() {
     var kegiatanList by remember { mutableStateOf<List<KegiatanItem>>(emptyList()) }
 
     // Load initial data in parallel
+    fun reloadData() {
+        coroutineScope.launch {
+            val summaryDeferred = async { ApiClient.fetchDailySummary(token) }
+            val kegiatanDeferred = async { ApiClient.fetchKegiatan(token, type = "all") }
+
+            val summary = summaryDeferred.await()
+            val kegiatanResult = kegiatanDeferred.await()
+            dailySummary = summary
+            kegiatanStats = kegiatanResult.first
+            kegiatanList = kegiatanResult.second
+        }
+    }
+
     LaunchedEffect(isLoggedIn, token) {
         if (isLoggedIn) {
-            coroutineScope.launch {
-                val summaryDeferred = async { ApiClient.fetchDailySummary(token) }
-                val kegiatanDeferred = async { ApiClient.fetchKegiatan(token, type = "all") }
-
-                val summary = summaryDeferred.await()
-                val kegiatanResult = kegiatanDeferred.await()
-                dailySummary = summary
-                kegiatanStats = kegiatanResult.first
-                kegiatanList = kegiatanResult.second
-            }
+            reloadData()
         }
     }
 
@@ -104,7 +108,9 @@ fun SikerenApp() {
                         onNavigateToQr = { currentTab = 2 },
                         onNavigateToKegiatan = { currentTab = 1 },
                         onNavigateToProfile = { currentTab = 3 },
-                        onSelectKegiatan = { selectedKegiatan = it }
+                        onNavigateToDashboardKeseluruhan = { currentTab = 4 },
+                        onSelectKegiatan = { selectedKegiatan = it },
+                        onRefreshData = { reloadData() }
                     )
                     1 -> KegiatanScreen(
                         stats = kegiatanStats,
@@ -137,11 +143,15 @@ fun SikerenApp() {
                             currentTab = 0
                         }
                     )
+                    4 -> DashboardKeseluruhanScreen(
+                        dailySummary = dailySummary,
+                        onBack = { currentTab = 0 }
+                    )
                 }
             }
 
             // Minimalist Floating Bottom Dock (hidden in detail view, visible in main tabs)
-            if (selectedKegiatan == null) {
+            if (selectedKegiatan == null && currentTab != 4) {
                 BottomFloatingDock(
                     currentTab = currentTab,
                     onTabSelected = { currentTab = it },

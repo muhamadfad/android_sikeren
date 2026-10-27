@@ -12,6 +12,7 @@ data class UserProfile(
     val organisasi: String = "Bagian Umum",
     val idSatker: String = "7400",
     val role: String = "admin_pst",
+    val isKetuaTim: Boolean = true,
     val isAdminPst: Boolean = true,
     val isPimpinan: Boolean = false
 )
@@ -46,6 +47,70 @@ data class KegiatanStats(
     val totalKegiatan: Int = 0
 )
 
+data class RuanganStatusItem(
+    val id: Int,
+    val nama: String,
+    val lokasi: String,
+    val kapasitas: Int,
+    val fasilitas: String,
+    val isInUse: Boolean,
+    val statusText: String,
+    val activeAgenda: String,
+    val activeTime: String,
+    val organizer: String
+)
+
+data class ZoomStatusItem(
+    val id: String,
+    val nama: String,
+    val kapasitas: Int,
+    val isInUse: Boolean,
+    val statusText: String,
+    val activeAgenda: String,
+    val activeTime: String
+)
+
+data class PetugasKontakItem(
+    val id: Int,
+    val grup: String, // "satpam", "cs", "pst", "ppid"
+    val nama: String,
+    val niplama: String = "",
+    val sesi: Int = 1,
+    val jam: String = "",
+    val status: String = "Bertugas",
+    val keterangan: String = "",
+    val noHp: String = ""
+)
+
+data class UndanganRapatItem(
+    val id: Int,
+    val judul: String,
+    val nomorSurat: String,
+    val agenda: String,
+    val tempat: String,
+    val pemimpin: String,
+    val notulis: String = "-",
+    val tanggalDisplay: String,
+    val jamDisplay: String,
+    val suratUrl: String? = null,
+    val statusKehadiran: String = "Belum Konfirmasi",
+    val isToday: Boolean = false
+)
+
+data class PresensiKegiatanItem(
+    val id: Int,
+    val judul: String,
+    val agenda: String,
+    val tempat: String,
+    val jenis: String = "Kegiatan",
+    val jam: String,
+    val statusKehadiran: String = "Belum Hadir", // "Belum Hadir", "Hadir", "Berhalangan"
+    val waktuPresensi: String? = null,
+    val keterangan: String? = null,
+    val canCheckin: Boolean = true,
+    val canExcuse: Boolean = true
+)
+
 data class PresensiStatus(
     val code: Int = 0, // 0 = Belum Hadir, 1 = Masuk, 2 = Keluar (P), 3 = Kembali, 4 = Pulang, 5 = Dinas
     val label: String = "Belum Hadir",
@@ -59,7 +124,7 @@ data class NotificationItem(
     val judul: String,
     val pesan: String,
     val link: String? = null,
-    val tipe: String? = null,
+    val tipe: String? = null, // "penugasan_ketua_tim", "tugas_kegiatan", "sub_kegiatan", "ruangan_release"
     val kegiatanNama: String? = null,
     val subKegiatan: String? = null,
     val isRead: Boolean = false,
@@ -92,13 +157,21 @@ data class PstDailyData(
 )
 
 data class DailySummary(
-    val todayDate: String = "Senin, 19 Oktober 2026",
+    val todayDate: String = "Selasa, 27 Oktober 2026",
     val presensi: PresensiStatus = PresensiStatus(),
-    val unreadNotifications: Int = 3,
-    val kegiatanTodayCount: Int = 2,
+    val unreadNotifications: Int = 0,
+    val kegiatanTodayCount: Int = 0,
     val kegiatanToday: List<KegiatanItem> = emptyList(),
     val rapatList: List<KegiatanItem> = emptyList(),
-    val pstData: PstDailyData = PstDailyData()
+    val pstData: PstDailyData = PstDailyData(),
+    val ruanganList: List<RuanganStatusItem> = emptyList(),
+    val zoomList: List<ZoomStatusItem> = emptyList(),
+    val satpamList: List<PetugasKontakItem> = emptyList(),
+    val csList: List<PetugasKontakItem> = emptyList(),
+    val ppidList: List<PetugasKontakItem> = emptyList(),
+    val undanganRapatList: List<UndanganRapatItem> = emptyList(),
+    val presensiKegiatanList: List<PresensiKegiatanItem> = emptyList(),
+    val isKetuaTim: Boolean = false
 )
 
 data class OfficeLocation(
